@@ -1,1 +1,38 @@
+#!/bin/bash
 
+# Update system
+yum update -y
+
+# Install Apache
+yum install -y httpd
+
+# Start Apache
+systemctl start httpd
+systemctl enable httpd
+
+# Get IMDSv2 token
+TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" \
+-H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+
+# Fetch instance metadata
+INSTANCE_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" \
+http://169.254.169.254/latest/meta-data/instance-id)
+
+# Create HTML page
+cat <<EOF > /var/www/html/index.html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AWS EC2 Info</title>
+</head>
+<body style="font-family: Arial; text-align:center; margin-top:50px;">
+    <h1>✅ EC2 Instance is Running</h1>
+    <p>This page is created using <b>User Data</b></p>
+    
+    <h2>Instance Details</h2>
+    <p><strong>Instance ID:</strong> $INSTANCE_ID</p>
+
+    <p>Hello from your Linux server 🚀</p>
+</body>
+</html>
+EOF
