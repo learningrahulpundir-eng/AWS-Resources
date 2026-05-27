@@ -111,3 +111,39 @@ Avoid DynamoDB for workloads that require complex relational queries, multi-tabl
 - Create a Lambda function to fetch data from S3
 - Create a DynamoDB table
 - Add logic to push the imported data into DynamoDB
+
+### Quick code to make connection with Dynamo DB and put one item
+import json
+import boto3
+import uuid
+
+# Initialize DynamoDB resource
+dynamodb = boto3.resource('dynamodb')
+
+# Replace with your table name
+table = dynamodb.Table('Users')
+
+def lambda_handler(event, context):
+    try:
+        # Create a sample item
+        item = {
+            'userId': str(uuid.uuid4()),  # unique ID
+            'name': 'Rahul',
+            'age': 25,
+            'city': 'Agra'
+        }
+
+        # Insert into DynamoDB
+        table.put_item(Item=item)
+
+        return {
+            'statusCode': 200,
+            'body': json.dumps('Item inserted successfully!')
+        }
+
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps(f'Error: {str(e)}')
+        }
+``
