@@ -149,3 +149,51 @@ def lambda_handler(event, context):
         }
 ```
 
+### Example Lambda code
+```python
+import json
+import boto3
+import pandas as pd
+
+s3 = boto3.client('s3')
+dynamodb = boto3.resource('dynamodb')
+
+# Replace with your values
+BUCKET_NAME = 'my-data-bucket'
+FILE_KEY = 'users.xlsx'
+TABLE_NAME = 'Users'
+
+def lambda_handler(event, context):
+    try:
+        # Download file from S3 to /tmp
+        local_file = '/tmp/users.xlsx'
+        s3.download_file(BUCKET_NAME, FILE_KEY, local_file)
+
+        # Read Excel file
+        df = pd.read_excel(local_file)
+
+        # Connect to DynamoDB
+        table = dynamodb.Table(TABLE_NAME)
+
+        # Insert records
+        for _, row in df.iterrows():
+            item = {
+                'userId': str(row['userId']),
+                'name': str(row['name']),
+                'age': int(row['age']),
+                'city': str(row['city'])
+            }
+
+            table.put_item(Item=item)
+
+        return {
+            'statusCode': 200,
+            'body': json.dumps('Data imported successfully!')
+        }
+
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps(str(e))
+        }
+```
