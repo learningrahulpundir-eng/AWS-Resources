@@ -90,3 +90,24 @@ Costs generally include:
 Use DynamoDB when you need massive scale, fast reads/writes, and a serverless database with automatic scaling.
 
 Avoid DynamoDB for workloads that require complex relational queries, multi-table transactions, or large-scale joins.
+
+## Demo ideas
+
+### Demo 1: Basic table operations
+- Create a DynamoDB table
+- Add an item to the table
+- Scan table data
+- Query the table using the Query Editor
+
+### Demo 2: Lambda integration
+- Create a Lambda function
+- Create an IAM role that allows Lambda to access DynamoDB
+- Add logic to the Lambda function to insert a new item into the table
+- Test the Lambda function
+- Verify that the data was inserted into DynamoDB
+
+### Demo 3: S3 to DynamoDB data import
+- Upload an Excel sheet to S3
+- Create a Lambda function to fetch data from S3
+- Create a DynamoDB table
+- Add logic to push the imported data into DynamoDB
