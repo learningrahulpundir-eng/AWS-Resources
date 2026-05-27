@@ -112,7 +112,7 @@ Avoid DynamoDB for workloads that require complex relational queries, multi-tabl
 - Create a DynamoDB table
 - Add logic to push the imported data into DynamoDB
 
-### Example Lambda code
+### Example Lambda code to push item in Dynmo DB
 ```python
 import json
 import boto3
@@ -149,7 +149,7 @@ def lambda_handler(event, context):
         }
 ```
 
-### Example Lambda code
+### Example Lambda code for pull data from S3 and put into Dynamo DB
 ```python
 import json
 import boto3
