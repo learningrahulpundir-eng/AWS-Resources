@@ -107,7 +107,7 @@ Avoid DynamoDB for workloads that require complex relational queries, multi-tabl
 - Verify that the data was inserted into DynamoDB
 
 ### Demo 3: S3 to DynamoDB data import
-- Upload an Excel sheet to S3
+- Upload an Excel/CSV to S3
 - Create a Lambda function to fetch data from S3
 - Create a DynamoDB table
 - Add logic to push the imported data into DynamoDB
@@ -149,51 +149,33 @@ def lambda_handler(event, context):
         }
 ```
 
-### Example Lambda code for pull data from S3 and put into Dynamo DB
+### Example Lambda code to import CSV data from S3 into DynamoDB
 ```python
-import json
 import boto3
-import pandas as pd
+import csv
 
-s3 = boto3.client('s3')
-dynamodb = boto3.resource('dynamodb')
-
-# Replace with your values
-BUCKET_NAME = 'my-data-bucket'
-FILE_KEY = 'users.xlsx'
-TABLE_NAME = 'Users'
+s3 = boto3.client("s3")
+dynamodb = boto3.resource("dynamodb")
 
 def lambda_handler(event, context):
-    try:
-        # Download file from S3 to /tmp
-        local_file = '/tmp/users.xlsx'
-        s3.download_file(BUCKET_NAME, FILE_KEY, local_file)
+    bucket_name = "rahul-demo-bucket2017"
+    object_key = "Users.csv"
+    local_path = "/tmp/users.csv"
+    table_name = "Users"
 
-        # Read Excel file
-        df = pd.read_excel(local_file)
+    # Download the CSV file from S3 into the Lambda temp directory
+    s3.download_file(bucket_name, object_key, local_path)
 
-        # Connect to DynamoDB
-        table = dynamodb.Table(TABLE_NAME)
+    table = dynamodb.Table(table_name)
 
-        # Insert records
-        for _, row in df.iterrows():
-            item = {
-                'userId': str(row['userId']),
-                'name': str(row['name']),
-                'age': int(row['age']),
-                'city': str(row['city'])
-            }
-
+    with open(local_path, mode="r", newline="") as csv_file:
+        reader = csv.DictReader(csv_file)
+        for item in reader:
             table.put_item(Item=item)
 
-        return {
-            'statusCode': 200,
-            'body': json.dumps('Data imported successfully!')
-        }
-
-    except Exception as e:
-        return {
-            'statusCode': 500,
-            'body': json.dumps(str(e))
-        }
+    return {
+        "statusCode": 200,
+        "body": "CSV data successfully imported into DynamoDB"
+    }
 ```
+
