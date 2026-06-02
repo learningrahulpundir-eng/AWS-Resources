@@ -9,66 +9,151 @@ EventBridge receives events and triggers actions automatically according to matc
 ## Key concepts
 
 - **Event**: A record of something that happened. Examples: EC2 instance state changes, file uploaded to S3, scheduled time trigger, user login.
-- **Event bus**: Where events are received and processed.
-	- Default — AWS service events
-	- Custom — Application events you send
-	- Partner — Events from SaaS partners (e.g., Shopify)
-- **Rule**: Matches incoming events and routes them to targets. Rules can filter by `source`, `detail-type`, and `detail` fields.
+Demo: Stop an EC2 instance using EventBridge
 
-	Example rule (match EC2 instances that stopped):
+Architecture: EventBridge Rule → Lambda → EC2 (Stop)
+
+Overview: schedule a rule or trigger on an event to invoke a Lambda that calls the EC2 StopInstances API.
+
+1) IAM role for Lambda
+
+- Create an IAM role with the Lambda trusted entity.
+- Attach `AWSLambdaBasicExecutionRole` and a minimal custom policy that allows stopping the specific instance. Example policy (least privilege):
 
 ```json
 {
-	"source": ["aws.ec2"],
-	"detail-type": ["EC2 Instance State-change Notification"],
-	"detail": { "state": ["stopped"] }
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Effect": "Allow",
+			"Action": ["ec2:StopInstances"],
+			"Resource": ["arn:aws:ec2:REGION:ACCOUNT_ID:instance/INSTANCE_ID"]
+		}
+	]
 }
 ```
 
-- **Target**: The destination that acts when a rule matches. Common targets: Lambda, SNS, SQS, Step Functions, API Gateway.
+Replace `REGION`, `ACCOUNT_ID`, and `INSTANCE_ID` as appropriate.
 
-## How EventBridge works (step-by-step)
+2) Lambda function
 
-1. Event occurs (e.g., an EC2 instance stops).
-2. The event is sent to EventBridge.
-3. Rules evaluate the event and select matching targets.
-4. EventBridge delivers the event to the configured target(s) (for example, invoke a Lambda function).
+- Create a Python 3.x Lambda named `StopEC2Function` and attach the IAM role above.
+- Use an environment variable `INSTANCE_ID` instead of hardcoding the ID.
 
-**Basic flow:** Event Source → EventBridge → Rule → Target
+Example Lambda code:
 
-## Example architecture
+```python
+import os
+import boto3
 
-EC2 state change → EventBridge → Lambda → (notify / stop instance / update DB)
+ec2 = boto3.client('ec2')
 
-## When to use EventBridge
-
-- Decouple producers and consumers in distributed systems.
-- Build serverless workflows triggered by events.
-- Integrate third-party SaaS events into your AWS account.
-
-## Quick tips
-
-- Use fine-grained rule filters to reduce unnecessary target invocations.
-- Test rules with sample events in the console or via the AWS CLI.
-- Consider retry and dead-letter configurations for resilient target delivery.
-
----
-
-_File rewritten for clarity and easier scanning._
-
-## EventBridge Scheduler
-
-EventBridge supports scheduled rules using cron or rate expressions. Use these to trigger targets on a schedule without running servers.
-
-Example — stop an EC2 instance daily at 10:00 PM (UTC):
-
-```text
-cron(0 22 * * ? *)
+def lambda_handler(event, context):
+		instance_id = os.environ.get('INSTANCE_ID')
+		if not instance_id:
+				raise ValueError('INSTANCE_ID environment variable not set')
+		try:
+				resp = ec2.stop_instances(InstanceIds=[instance_id])
+				print('StopInstances response:', resp)
+				return {'statusCode': 200, 'body': 'Stop initiated'}
+		except Exception:
+				raise
 ```
 
-Quick notes:
+3) Create an EventBridge rule
 
-- Cron expressions use UTC by default; convert times if you need a local timezone.
-- You can also use `rate()` expressions, e.g. `rate(1 day)` for simple intervals.
-- Test scheduled rules with short intervals before applying them in production.
-- Ensure the rule has permissions to invoke the target and configure retries / dead-letter queues for resilience.
+- In EventBridge, create a rule and choose either:
+	- Schedule: `rate(5 minutes)` or `cron(0 18 * * ? *)` (example: daily at 6 PM UTC)
+	- Event pattern: match a specific AWS event source
+- Set the rule target to the `StopEC2Function` Lambda and pass no special input (it will read `INSTANCE_ID` from env).
+
+4) Test and verify
+
+- Start the target EC2 instance (state: Running).
+- Use a short `rate()` expression for testing (e.g., `rate(5 minutes)`) or use the EventBridge console's test feature.
+- Check Lambda logs in CloudWatch to confirm the function ran and returned successfully.
+- Verify the EC2 instance transitions: Running → Stopping → Stopped.
+
+Expected Lambda log snippet:
+
+```
+StopInstances response: { ... }
+```
+
+Note: follow least-privilege principles — avoid `AmazonEC2FullAccess` unless you need broad EC2 permissions.
+rate(5 minutes)
+
+Option 2 (Cron):
+cron(0 18 * * ? *)
+
+✅ Example:
+
+Runs every day at 6 PM
+
+
+🔹 Step 6: Select Target
+
+Choose:
+
+Target type: Lambda function
+
+
+Select:
+
+StopEC2Function
+
+
+
+
+🔹 Step 7: Finish Rule
+
+Keep default settings
+Click Create rule
+
+
+✅ ✅ Step 8: Start EC2 Instance
+Before testing:
+
+Go to EC2
+Make sure instance is in:
+👉 Running state
+
+
+✅ ✅ Step 9: Wait or Test
+👉 If using rate(5 minutes):
+
+Wait 5 minutes
+
+👉 Or manually test:
+
+Go to EventBridge → rule → test
+
+
+✅ ✅ Expected Output
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ComponentResultEventBridgeTriggers ✅LambdaExecutes ✅EC2Stopped ✅
+
+✅ ✅ Step 10: Verify
+✅ EC2
+
+Running → Stopping → Stopped
