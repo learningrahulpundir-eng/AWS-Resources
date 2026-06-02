@@ -49,7 +49,7 @@ import boto3
 ec2 = boto3.client('ec2')
 
 def lambda_handler(event, context):
-		instance_id = os.environ.get('INSTANCE_ID')
+		instance_id = 'i-your INSTANCE_ID'
 		if not instance_id:
 				raise ValueError('INSTANCE_ID environment variable not set')
 		try:
