@@ -37,7 +37,7 @@ A Glue Crawler scans data sources and builds metadata in the Glue Data Catalog.
 4. Create or update a Data Catalog table
 5. Make the table available for query tools
 
-### Query tools that use the Data Catalog
+### Query tools that use the catalog
 - Amazon Athena
 - Amazon Redshift Spectrum
 - AWS Glue ETL jobs
@@ -118,7 +118,10 @@ id,name,amount,city
 3. Click **Tables**
 4. Confirm a table appears, such as `demo_sales`
 5. Verify the detected columns and data types:
-   - `id`, `name`, `amount`, `city`
+   - `id`
+   - `name`
+   - `amount`
+   - `city`
 
 ### Step 6: Query the data in Athena
 1. Open the Amazon Athena console
@@ -133,21 +136,15 @@ SELECT * FROM demo_sales;
 ---
 
 ## Summary
-AWS Glue simplifies ETL and metadata discovery. A Glue Crawler is especially useful when the schema is unknown or changing, because it automates table creation for analytics tools.
+AWS Glue simplifies ETL and metadata discovery.
+A Glue Crawler is especially useful when the schema is unknown or changing because it automates table creation for analytics tools.
 
 ## Architecture overview
-Raw Data (CSV)
-   ↓
-S3 Bucket
-   ↓
-Glue Crawler
-   ↓
-Data Catalog Table
-   ↓
-Glue ETL Job (Transform & Clean)
-   ↓
-S3 (Processed Data - Parquet)
-   ↓
-Glue Crawler (Optional)
-   ↓
-Athena Query
+- Raw Data (CSV)
+- S3 Bucket
+- Glue Crawler
+- Data Catalog Table
+- Glue ETL Job (Transform & Clean)
+- S3 (Processed Data - Parquet)
+- Glue Crawler (Optional)
+- Athena Query
