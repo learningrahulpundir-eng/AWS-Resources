@@ -205,3 +205,110 @@ S3 (CSV upload)
           └─> Run Lambda (post-processing)
               └─> DynamoDB
 ```
+
+STEP 1: Create S3 Bucket
+📍 S3 → Create bucket
+Example:
+pipeline-demo-bucket
+
+Create folders:
+raw/
+processed/
+
+
+✅ Upload CSV
+Upload file:
+s3://pipeline-demo-bucket/raw/data.csv
+
+
+✅ ✅ STEP 2: Create Glue Crawler
+📍 Glue → Crawlers → Create
+Configuration:
+
+Data source:
+
+s3://pipeline-demo-bucket/raw/
+
+
+IAM role → create/select existing
+
+
+Output:
+Database: demo_db
+Table: auto-created
+
+
+✅ Run crawler manually once
+👉 Verify table created in Glue Data Catalog
+
+✅ ✅ STEP 3: Create Glue ETL Job
+📍 Glue → Jobs → Create
+
+✅ Use this script (parameter + filter)
+Pythonimport sysfrom awsglue.utils import getResolvedOptionsfrom pyspark.context import SparkContextfrom awsglue.context import GlueContextfrom awsglue.job import Jobfrom awsglue.transforms import Filterargs = getResolvedOptions(sys.argv, ['JOB_NAME', 'input_path', 'output_path'])input_path = args['input_path']output_path = args['output_path']sc = SparkContext()glueContext = GlueContext(sc)job = Job(glueContext)job.init(args['JOB_NAME'], args)datasource = glueContext.create_dynamic_frame.from_options(    connection_type="s3",    connection_options={"paths": [input_path]},    format="csv",    format_options={"withHeader": True})filtered = Filter.apply(    frame=datasource,    f=lambda row: row["age"] is not None and row["age"].isdigit() and int(row["age"]) > 25)glueContext.write_dynamic_frame.from_options(    frame=filtered,    connection_type="s3",    connection_options={"path": output_path},    format="csv")job.commit()Show less
+
+✅ Job name:
+etl-demo-job
+
+
+✅ Test manually:
+--input_path = s3://pipeline-demo-bucket/raw/data.csv
+--output_path = s3://pipeline-demo-bucket/processed/
+
+
+✅ ✅ STEP 4: Create DynamoDB Table
+📍 DynamoDB → Create table
+Table name: demo_table
+Partition key: id (String)
+
+
+✅ ✅ STEP 5: Create Lambda (Load to DynamoDB)
+📍 Lambda → Create function
+Runtime: Python
+
+✅ Code:
+Pythonimport boto3import csvs3 = boto3.client('s3')dynamodb = boto3.resource('dynamodb')table = dynamodb.Table('demo_table')def lambda_handler(event, context):    bucket = "pipeline-demo-bucket"    key = "processed/part-00000"  # adjust after output    response = s3.get_object(Bucket=bucket, Key=key)    content = response['Body'].read().decode('utf-8').splitlines()    reader = csv.DictReader(content)    for row in reader:        table.put_item(Item=row)    return "Inserted into DynamoDB"Show more lines
+
+✅ Add permissions:
+
+S3 read
+DynamoDB write
+
+
+✅ ✅ STEP 6: Create Step Function
+📍 Step Functions → Create → Author with code
+
+✅ Use this JSON:
+JSON{  "StartAt": "RunCrawler",  "States": {    "RunCrawler": {      "Type": "Task",      "Resource": "arn:aws:states:::glue:startCrawler",      "Parameters": {        "Name": "your-crawler-name"      },      "Next": "WaitCrawler"    },    "WaitCrawler": {      "Type": "Wait",      "Seconds": 60,      "Next": "RunGlueJob"    },    "RunGlueJob": {      "Type": "Task",      "Resource": "arn:aws:states:::glue:startJobRun",      "Parameters": {        "JobName": "etl-demo-job",        "Arguments": {          "--input_path": "s3://pipeline-demo-bucket/raw/data.csv",          "--output_path": "s3://pipeline-demo-bucket/processed/"        }      },      "Next": "WaitJob"    },    "WaitJob": {      "Type": "Wait",      "Seconds": 120,      "Next": "RunLambda"    },    "RunLambda": {      "Type": "Task",      "Resource": "arn:aws:states:::lambda:invoke",      "Parameters": {        "FunctionName": "your-lambda-name"      },      "End": true    }  }}Show less
+
+✅ ✅ STEP 7: Create Lambda (Trigger Step Function)
+📍 Lambda → Create function
+
+✅ Code:
+Pythonimport boto3step = boto3.client('stepfunctions')def lambda_handler(event, context):    step.start_execution(        stateMachineArn="YOUR_STEP_FUNCTION_ARN"    )``Show more lines
+
+✅ ✅ STEP 8: Connect S3 → Lambda
+📍 S3 → Bucket → Properties
+Event notification:
+
+Event type: PUT
+Destination: Lambda (trigger function)
+
+
+✅ ✅ FINAL FLOW (Fully Automated)
+Upload CSV → S3
+   ↓
+Triggers Lambda
+   ↓
+Starts Step Function
+   ↓
+Glue Crawler runs
+   ↓
+Glue ETL runs
+   ↓
+Output saved to S3
+   ↓
+Lambda processes output
+   ↓
+Data stored in DynamoDB
+
