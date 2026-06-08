@@ -181,22 +181,24 @@ Example execution input (copy and paste when starting the Step Function):
 
 
 
-Demo-3 (Industry usecase)
-1️⃣ Upload CSV → S3
-2️⃣ Step Function starts
-3️⃣ Run Glue Crawler → creates DB + table
-4️⃣ Run Glue ETL → transform data → save to S3
-5️⃣ Run Lambda → read processed data
-6️⃣ Insert into DynamoDB
+### Demo 3 — Industry use case
 
-Final Architecture
+Steps:
+1. Upload CSV to S3
+2. Trigger a Step Functions execution (via S3 event or Lambda)
+3. Run a Glue Crawler to create or update the data catalog (DB + table)
+4. Run a Glue ETL job to transform data and write results to S3
+5. Invoke a Lambda to process transformed output
+6. Insert processed records into DynamoDB
+
+Final architecture (high-level)
+
+```text
 S3 (CSV upload)
-   ↓ (event)
-Lambda Trigger
-   ↓
-Step Functions
-   ├── Run Glue Crawler
-   ├── Run Glue ETL Job
-   ├── Run Lambda (process output)
-   ↓
-DynamoDB
+  └─> Lambda (S3 event)
+      └─> Step Functions
+          ├─> Run Glue Crawler
+          ├─> Run Glue ETL Job
+          └─> Run Lambda (post-processing)
+              └─> DynamoDB
+```
