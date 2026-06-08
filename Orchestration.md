@@ -90,12 +90,17 @@ Demos-1:
 3️⃣ Create Step Function to Run the ETL Jobs
 
 
+
 Demo-2
 1️⃣ Upload CSV → S3
-2️⃣ Create Paramterized ETL Jobs
-3️⃣ Run Parametrized Step Function to Run the ETL Jobs
+2️⃣ Create Parameterized ETL jobs
+3️⃣ Run a parameterized Step Function to invoke the job
 
-Helpful for the Parameterized Script
+Helpful: keep the Glue script and Step Function input as separate, copy-pasteable blocks.
+
+Python Glue job (copy and paste into the Glue script editor):
+
+```python
 import sys
 from awsglue.transforms import *
 from awsglue.utils import getResolvedOptions
@@ -103,55 +108,46 @@ from pyspark.context import SparkContext
 from awsglue.context import GlueContext
 from awsglue.job import Job
 
-# ✅ Read parameters
 args = getResolvedOptions(sys.argv, ['JOB_NAME', 'input_path', 'output_path'])
-
 input_path = args['input_path']
 output_path = args['output_path']
 
-# ✅ Initialize
 sc = SparkContext()
 glueContext = GlueContext(sc)
 spark = glueContext.spark_session
 job = Job(glueContext)
 job.init(args['JOB_NAME'], args)
 
-# ✅ Read data from S3
 datasource = glueContext.create_dynamic_frame.from_options(
-    connection_type="s3",
-    connection_options={"paths": [input_path]},
-    format="csv",
-    format_options={"withHeader": True}
+    connection_type='s3',
+    connection_options={'paths': [input_path]},
+    format='csv',
+    format_options={'withHeader': True}
 )
 
-# ✅ Apply FILTER (change condition as needed)
 filtered_data = Filter.apply(
     frame=datasource,
-    f=lambda row: row["age"] is not None and row["age"].isdigit() and int(row["age"]) > 25
+    f=lambda row: row.get('age') is not None and str(row.get('age')).isdigit() and int(row.get('age')) > 25
 )
 
-# ✅ Write data to S3
 glueContext.write_dynamic_frame.from_options(
     frame=filtered_data,
-    connection_type="s3",
-    connection_options={"path": output_path},
-    format="csv"
+    connection_type='s3',
+    connection_options={'path': output_path},
+    format='csv'
 )
 
-print("ETL job with filter completed successfully")
-
+print('ETL job with filter completed successfully')
 job.commit()
+```
 
+How to run the Glue job with parameters:
+1. Open the Glue console → Jobs → Run job
+2. Provide job parameters (example keys: `--input_path`, `--output_path`)
 
-## Run directly ETL Service with paramter
-Go To Run with Paramters
-Then Job Parmeters
-Than add value of the paramter
+Step Functions state machine (copy and paste into the Step Functions editor):
 
-## Run Step funciton with paramter
-Below the sample script
-
-`
+```json
 {
   "StartAt": "Glue StartJobRun",
   "States": {
@@ -169,14 +165,16 @@ Below the sample script
     }
   }
 }
-`
+```
 
-During the running the step function
+Example execution input (copy and paste when starting the Step Function):
 
+```json
 {
-  "input_path": "s3://rahul11-demo111-bucket2017/input/users (2).csv",
-  "output_path": "s3://rahul11-demo111-bucket2017/output/"
+  "input_path": "s3://your-bucket/input/users.csv",
+  "output_path": "s3://your-bucket/output/"
 }
+```
 
 
 
