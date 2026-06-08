@@ -84,17 +84,20 @@ Step Functions has a free tier:
 This makes Step Functions a safe and practical choice for building orchestrated AWS data workflows.
 
 
-Demos-1:
-1️⃣ Upload CSV → S3
-2️⃣ Create ETL Jobs
-3️⃣ Create Step Function to Run the ETL Jobs
+### Demo 1 — Quick start
+
+Steps:
+1. Upload a CSV file to S3
+2. Create Glue ETL job(s) to process the file
+3. Create a Step Functions state machine to run the ETL jobs
 
 
+### Demo 2 — Parameterized ETL
 
-Demo-2
-1️⃣ Upload CSV → S3
-2️⃣ Create Parameterized ETL jobs
-3️⃣ Run a parameterized Step Function to invoke the job
+Steps:
+1. Upload a CSV file to S3
+2. Create a parameterized Glue ETL job (accepts `--input_path`, `--output_path`)
+3. Use a Step Functions state machine to pass parameters and invoke the job
 
 Helpful: keep the Glue script and Step Function input as separate, copy-pasteable blocks.
 
