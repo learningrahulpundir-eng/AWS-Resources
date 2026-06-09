@@ -347,15 +347,58 @@ def lambda_handler(event, context):
 - Use this code:
 
 ```python
+import csv
 import boto3
 
-step = boto3.client('stepfunctions')
+s3 = boto3.client('s3')
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('Users')
 
 def lambda_handler(event, context):
-    step.start_execution(
-        stateMachineArn='YOUR_STEP_FUNCTION_ARN'
-    )
-    return {'status': 'started'}
+    bucket = 'rahul-demo-bucket2017'
+    prefix = 'output/'
+
+    # ✅ List all objects in folder
+    response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+
+    if 'Contents' not in response:
+        print("No files found")
+        return {"status": "no files"}
+
+    # ✅ Filter only valid data files
+    files = [
+        obj for obj in response['Contents']
+        if 'part-' in obj['Key']  # Glue output files
+    ]
+
+    if not files:
+        print("No valid data files found")
+        return {"status": "no valid files"}
+
+    # ✅ Get latest file based on LastModified
+    latest_file = max(files, key=lambda x: x['LastModified'])
+    latest_key = latest_file['Key']
+
+    print(f"✅ Processing latest file: {latest_key}")
+
+    # ✅ Read the file
+    response = s3.get_object(Bucket=bucket, Key=latest_key)
+    content = response['Body'].read().decode('utf-8').splitlines()
+    reader = csv.DictReader(content)
+
+    success_count = 0
+
+    for row in reader:
+        table.put_item(Item=row)
+        success_count += 1
+
+    print(f"Inserted {success_count} records from {latest_key}")
+
+    return {
+        "status": "success",
+        "file_processed": latest_key,
+        "records_inserted": success_count
+    }
 ```
 
 ### Step 8: Connect S3 to the Lambda trigger
