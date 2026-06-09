@@ -256,7 +256,7 @@ Copy this state machine definition into Step Functions:
 }
 ```
 
-## 🔥 DEMO 3 — ETL to DynamoDB via Lambda
+## 🔥 DEMO 3 —  End-to-End AWS Data Pipeline Project | S3 → Step Functions → Glue → Lambda → DynamoDB
 Steps:
 1. Upload CSV to S3
 2. Trigger a Step Functions execution (via S3 event or Lambda)
