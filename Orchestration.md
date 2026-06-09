@@ -302,7 +302,7 @@ def lambda_handler(event, context):
   "States": {
     "RunCrawler": {
       "Type": "Task",
-      "Resource": "arn:aws:states:::glue:startCrawler",
+      "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
       "Parameters": {
         "Name": "your-crawler-name"
       },
