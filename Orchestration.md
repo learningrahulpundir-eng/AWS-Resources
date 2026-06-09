@@ -71,13 +71,105 @@ Step Functions free tier:
 - 4,000 state transitions per month
 - Good for learning and small workloads
 
-<h2 style="color:#1E90FF;">🚀 Demo 1 — Quick start ETL pipeline</h2>
+## 🚀 DEMO 1 — Quick start ETL pipeline
 Steps:
-1. Upload a CSV file to S3
-2. Create Glue ETL job(s) to process the file
-3. Create a Step Functions state machine to run the ETL jobs
+1. Create an S3 bucket and upload a CSV file
+2. Create a Glue ETL job to process the file and write output back to S3
+3. Create a Step Functions workflow to run the Glue job automatically
+4. Upload data and verify the workflow completes successfully
 
-<h2 style="color:#228B22;">✨ Demo 2 — Parameterized ETL job</h2>
+### Architecture overview
+
+```text
+S3 (CSV upload)
+  └─> Step Functions
+        └─> Glue ETL Job
+              └─> S3 (transformed output)
+```
+
+### Step 1: Create the S3 bucket
+- Create a bucket named `quickstart-demo-bucket`
+- Create folders:
+  - `input/`
+  - `output/`
+
+Upload your CSV file to:
+
+```text
+s3://quickstart-demo-bucket/input/data.csv
+```
+
+### Step 2: Create a Glue ETL job
+- Go to Glue → Jobs → Create job
+- Job name: `quickstart-etl-job`
+- Use a Python Shell job or Glue Studio script
+- Input path: `s3://quickstart-demo-bucket/input/data.csv`
+- Output path: `s3://quickstart-demo-bucket/output/`
+
+#### Example Glue ETL script
+
+```python
+import sys
+from awsglue.transforms import *
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from awsglue.context import GlueContext
+from awsglue.job import Job
+
+args = getResolvedOptions(sys.argv, ['JOB_NAME'])
+
+sc = SparkContext()
+glueContext = GlueContext(sc)
+job = Job(glueContext)
+job.init(args['JOB_NAME'], args)
+
+datasource = glueContext.create_dynamic_frame.from_options(
+    connection_type='s3',
+    connection_options={'paths': ['s3://quickstart-demo-bucket/input/data.csv']},
+    format='csv',
+    format_options={'withHeader': True}
+)
+
+# Example transformation: keep all rows
+cleaned = datasource
+
+glueContext.write_dynamic_frame.from_options(
+    frame=cleaned,
+    connection_type='s3',
+    connection_options={'path': 's3://quickstart-demo-bucket/output/'},
+    format='csv'
+)
+
+job.commit()
+```
+
+### Step 3: Create the Step Functions workflow
+- Go to Step Functions → Create state machine → Author with code
+
+#### Step Function definition
+
+```json
+{
+  "StartAt": "RunGlueJob",
+  "States": {
+    "RunGlueJob": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun",
+      "Parameters": {
+        "JobName": "quickstart-etl-job"
+      },
+      "End": true
+    }
+  }
+}
+```
+
+### Step 4: Run the workflow
+1. Start the Step Functions execution manually or from a Lambda trigger.
+2. Confirm the Glue job runs successfully.
+3. Verify transformed output appears in `s3://quickstart-demo-bucket/output/`
+
+## ✨ DEMO 2 — Parameterized ETL job
 Steps:
 1. Upload a CSV file to S3
 2. Create a parameterized Glue ETL job that accepts `--input_path` and `--output_path`
@@ -164,7 +256,7 @@ Copy this state machine definition into Step Functions:
 }
 ```
 
-<h2 style="color:#FF8C00;">🔥 Demo 3 — ETL to DynamoDB via Lambda</h2>
+## 🔥 DEMO 3 — ETL to DynamoDB via Lambda
 Steps:
 1. Upload CSV to S3
 2. Trigger a Step Functions execution (via S3 event or Lambda)
@@ -372,7 +464,7 @@ def lambda_handler(event, context):
 - Add an event notification for the `PUT` event
 - Set the destination to the Lambda trigger function
 
-<h2 style="color:#8A2BE2;">🧭 Demo 4 — Crawler-enabled workflow</h2>
+## 🧭 DEMO 4 — Crawler-enabled workflow
 Steps:
 1. Upload CSV to S3
 2. Trigger a Step Functions execution (via S3 event or Lambda)
