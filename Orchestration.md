@@ -71,13 +71,13 @@ Step Functions free tier:
 - 4,000 state transitions per month
 - Good for learning and small workloads
 
-## Demo 1 — Quick start
+<h2 style="color:#1E90FF;">🚀 Demo 1 — Quick start ETL pipeline</h2>
 Steps:
 1. Upload a CSV file to S3
 2. Create Glue ETL job(s) to process the file
 3. Create a Step Functions state machine to run the ETL jobs
 
-## Demo 2 — Parameterized ETL
+<h2 style="color:#228B22;">✨ Demo 2 — Parameterized ETL job</h2>
 Steps:
 1. Upload a CSV file to S3
 2. Create a parameterized Glue ETL job that accepts `--input_path` and `--output_path`
@@ -164,7 +164,7 @@ Copy this state machine definition into Step Functions:
 }
 ```
 
-## Demo 3 — Industry use case
+<h2 style="color:#FF8C00;">🔥 Demo 3 — ETL to DynamoDB via Lambda</h2>
 Steps:
 1. Upload CSV to S3
 2. Trigger a Step Functions execution (via S3 event or Lambda)
@@ -372,7 +372,7 @@ def lambda_handler(event, context):
 - Add an event notification for the `PUT` event
 - Set the destination to the Lambda trigger function
 
-## Demo 4 — Crawler-enabled workflow
+<h2 style="color:#8A2BE2;">🧭 Demo 4 — Crawler-enabled workflow</h2>
 Steps:
 1. Upload CSV to S3
 2. Trigger a Step Functions execution (via S3 event or Lambda)
