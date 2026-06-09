@@ -24,7 +24,7 @@ Step Functions provides:
 
 ### Real-world analogy
 Step Functions is like a factory manager that coordinates tasks:
-- receive raw data
+- receive input data
 - store it in S3
 - transform it with Glue
 - query or publish results
@@ -188,18 +188,18 @@ S3 (CSV upload)
 ### Step 1: Create the S3 bucket
 - Create a bucket named `pipeline-demo-bucket`
 - Create folders:
-  - `raw/`
-  - `processed/`
+  - `input/`
+  - `output/`
 
 Upload your CSV file to:
 
 ```text
-s3://pipeline-demo-bucket/raw/data.csv
+s3://pipeline-demo-bucket/input/data.csv
 ```
 
 ### Step 2: Create a Glue Crawler
 - Go to Glue → Crawlers → Create crawler
-- Data source: `s3://pipeline-demo-bucket/raw/`
+- Data source: `s3://pipeline-demo-bucket/input/`
 - Select or create an IAM role
 - Output:
   - Database: `demo_db`
@@ -211,8 +211,8 @@ s3://pipeline-demo-bucket/raw/data.csv
 - Use a parameterized script
 - Job name: `etl-demo-job`
 - Example run parameters:
-  - `--input_path=s3://pipeline-demo-bucket/raw/data.csv`
-  - `--output_path=s3://pipeline-demo-bucket/processed/`
+  - `--input_path=s3://pipeline-demo-bucket/input/employee.csv`
+  - `--output_path=s3://pipeline-demo-bucket/output/`
 
 #### Glue ETL script
 
@@ -352,8 +352,8 @@ def lambda_handler(event, context):
       "Parameters": {
         "JobName": "etl-demo-job",
         "Arguments": {
-          "--input_path": "s3://pipeline-demo-bucket/raw/data.csv",
-          "--output_path": "s3://pipeline-demo-bucket/processed/"
+          "--input_path": "s3://pipeline-demo-bucket/input/data.csv",
+          "--output_path": "s3://pipeline-demo-bucket/output/"
         }
       },
       "Next": "WaitJob"
