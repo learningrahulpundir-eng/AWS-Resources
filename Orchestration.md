@@ -524,8 +524,14 @@ from pyspark.context import SparkContext
 from awsglue.context import GlueContext
 from awsglue.job import Job
 
-args = getResolvedOptions(sys.argv, ['JOB_NAME', 'input_path', 'output_path'])
-input_path = args['input_path']
+# Removed input_path, now using database + table
+args = getResolvedOptions(
+    sys.argv,
+    ['JOB_NAME','database_name', 'table_name', 'output_path']
+)
+
+database_name = args['database_name']
+table_name = args['table_name']
 output_path = args['output_path']
 
 sc = SparkContext()
@@ -533,18 +539,21 @@ glueContext = GlueContext(sc)
 job = Job(glueContext)
 job.init(args['JOB_NAME'], args)
 
-datasource = glueContext.create_dynamic_frame.from_options(
-    connection_type='s3',
-    connection_options={'paths': [input_path]},
-    format='csv',
-    format_options={'withHeader': True}
+# ✅ Read from Glue Data Catalog
+datasource = glueContext.create_dynamic_frame.from_catalog(
+    database=database_name,
+    table_name=table_name
 )
 
+# ✅ Apply transformation
 filtered = Filter.apply(
     frame=datasource,
-    f=lambda row: row.get('age') is not None and row.get('age').isdigit() and int(row.get('age')) > 25
+    f=lambda row: row.get('age') is not None
+    and str(row.get('age')).isdigit()
+    and int(row.get('age')) > 25
 )
 
+# ✅ Write back to S3
 glueContext.write_dynamic_frame.from_options(
     frame=filtered,
     connection_type='s3',
@@ -647,10 +656,11 @@ def lambda_handler(event, context):
       "Resource": "arn:aws:states:::glue:startJobRun",
       "Parameters": {
         "JobName": "etl-demo-job",
-        "Arguments": {
-          "--input_path": "s3://pipeline-demo-bucket/input/data.csv",
-          "--output_path": "s3://pipeline-demo-bucket/output/"
-        }
+       "Arguments": {
+        "--database_name.$": "$.database_name",
+        "--table_name.$": "$.table_name",
+        "--output_path.$": "$.output_path"
+      }
       },
       "Next": "WaitJob"
     },
