@@ -518,49 +518,41 @@ s3://pipeline-demo-bucket/input/data.csv
 
 ```python
 import sys
-from awsglue.transforms import *
 from awsglue.utils import getResolvedOptions
 from pyspark.context import SparkContext
 from awsglue.context import GlueContext
 from awsglue.job import Job
+from pyspark.sql.functions import col
 
-# Removed input_path, now using database + table
+# ✅ Get arguments
 args = getResolvedOptions(
     sys.argv,
-    ['JOB_NAME','database_name', 'table_name', 'output_path']
+    ['JOB_NAME', 'database_name','table_name', 'output_path' ]
 )
 
-database_name = args['database_name']
-table_name = args['table_name']
-output_path = args['output_path']
-
+# ✅ Initialize
 sc = SparkContext()
 glueContext = GlueContext(sc)
+spark = glueContext.spark_session
 job = Job(glueContext)
 job.init(args['JOB_NAME'], args)
 
-# ✅ Read from Glue Data Catalog
-datasource = glueContext.create_dynamic_frame.from_catalog(
-    database=database_name,
-    table_name=table_name
-)
+# ✅ Read from Data Catalog
+df = glueContext.create_dynamic_frame.from_catalog(
+    database=args['database_name'],
+    table_name=args['table_name']
+).toDF()
 
-# ✅ Apply transformation
-filtered = Filter.apply(
-    frame=datasource,
-    f=lambda row: row.get('age') is not None
-    and str(row.get('age')).isdigit()
-    and int(row.get('age')) > 25
-)
+# ✅ Apply simple filter (age > 25)
+df_filtered = df.filter(col("age") > 25)
 
-# ✅ Write back to S3
-glueContext.write_dynamic_frame.from_options(
-    frame=filtered,
-    connection_type='s3',
-    connection_options={'path': output_path},
-    format='csv'
-)
+# ✅ Write to S3
+df_filtered.write \
+    .mode("overwrite") \
+    .option("header", "true") \
+    .csv(args['output_path'])
 
+# ✅ Commit job (important)
 job.commit()
 ```
 
@@ -642,8 +634,9 @@ def lambda_handler(event, context):
       "Type": "Task",
       "Resource": "arn:aws:states:::aws-sdk:glue:startCrawler",
       "Parameters": {
-        "Name": "your-crawler-name"
+        "Name": "emplyoee_crawler"
       },
+      "ResultPath": "$.crawlerResult",
       "Next": "WaitCrawler"
     },
     "WaitCrawler": {
@@ -655,13 +648,14 @@ def lambda_handler(event, context):
       "Type": "Task",
       "Resource": "arn:aws:states:::glue:startJobRun",
       "Parameters": {
-        "JobName": "etl-demo-job",
-       "Arguments": {
-        "--database_name.$": "$.database_name",
-        "--table_name.$": "$.table_name",
-        "--output_path.$": "$.output_path"
-      }
+        "JobName": "demo_job",
+        "Arguments": {
+          "--database_name.$": "$.database_name",
+          "--table_name.$": "$.table_name",
+          "--output_path.$": "$.output_path"
+        }
       },
+      "ResultPath": "$.glueResult",
       "Next": "WaitJob"
     },
     "WaitJob": {
@@ -673,7 +667,8 @@ def lambda_handler(event, context):
       "Type": "Task",
       "Resource": "arn:aws:states:::lambda:invoke",
       "Parameters": {
-        "FunctionName": "your-lambda-name"
+        "FunctionName": "PushDataToDB",
+        "Payload.$": "$"
       },
       "End": true
     }
