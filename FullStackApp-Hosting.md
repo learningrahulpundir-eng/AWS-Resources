@@ -1,4 +1,4 @@
-#### Full Stack App hosting on AWS (React + Node)
+# Full Stack App hosting on AWS (React + Node)
 
 ### Frontend
 Create a simple React application, generate its production build, and upload the build files to an S3 bucket for static hosting.
