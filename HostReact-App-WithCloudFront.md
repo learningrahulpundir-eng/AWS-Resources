@@ -15,8 +15,9 @@ This guide shows how to:
 If you do not already have a React app, run:
 
 ```sh
-npx create-react-app my-app
+npm create vite@latest my-app
 cd my-app
+npm install
 ```
 
 ---
@@ -29,7 +30,7 @@ Generate the production files:
 npm run build
 ```
 
-This creates a folder named `build/` containing:
+This creates a folder named `dist/` containing:
 - `index.html`
 - `static/`
 
