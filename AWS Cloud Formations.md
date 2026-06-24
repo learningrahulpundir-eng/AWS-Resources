@@ -65,10 +65,12 @@ Resources:
 
 1. Install the AWS CLI
    https://awscli.amazonaws.com/AWSCLIV2.msi
-2. Copy the template code from Demo 1 and save as template.yaml file
-3. Create stack using aws cli
+2. Verify aws cli using cmd on termial : aws --version
+3. Copy the template code from Demo 1 and save as template.yaml file
+4. aws configure
+5. Create stack using aws cli
    aws cloudformation create-stack --stack-name MyLambdaStack --template-body file://template.yaml --capabilities CAPABILITY_NAMED_IAM
-4. Check the status of the stack is created or not
+6. Check the status of the stack is created or not
    aws cloudformation describe-stacks --stack-name MyLambdaStack
 
 
