@@ -61,6 +61,17 @@ Resources:
               }aws
 ```
 
+### Demo-2 Deploy CloudFormation Code Using the AWS CLI
+
+1. Install the AWS CLI
+   https://awscli.amazonaws.com/AWSCLIV2.msi
+2. Copy the template code from Demo 1 and save as template.yaml file
+3. Create stack using aws cli
+   aws cloudformation create-stack --stack-name MyLambdaStack --template-body file://template.yaml --capabilities CAPABILITY_NAMED_IAM
+4. Check the status of the stack is created or not
+   aws cloudformation describe-stacks --stack-name MyLambdaStack
+
+
 ## Step-by-Step Guide: Create a Lambda Function using CloudFormation
 
 Below is a simple guide to create an AWS Lambda function using a CloudFormation template.
