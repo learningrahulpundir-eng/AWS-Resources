@@ -16,6 +16,51 @@ Instead of creating resources manually in the AWS console, you describe them in 
 
 ---
 
+### Demos
+
+### Demo 1: Create simple lambda function using cloud formation
+
+```yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Lambda with inline code
+
+Resources:
+
+  MyLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: inline-lambda-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  MyLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: InlineLambdaFunction
+      Runtime: python3.9
+      Handler: index.lambda_handler
+      Role: !GetAtt MyLambdaExecutionRole.Arn
+      Timeout: 10
+
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+              return {
+                  "statusCode": 200,
+                  "body": "Hello from inline Lambda!"
+              }aws
+```
+
 ## Step-by-Step Guide: Create a Lambda Function using CloudFormation
 
 Below is a simple guide to create an AWS Lambda function using a CloudFormation template.
