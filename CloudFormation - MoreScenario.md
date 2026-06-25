@@ -2,11 +2,12 @@
 
 📁 Example project structure
 
+```text
 project/
 ├── template.yaml
 └── lambda/
     └── app.py
-
+```
 
 🧾 Step 1: Package the Lambda function
 
@@ -83,13 +84,14 @@ aws cloudformation describe-stacks --stack-name my-stack
 
 📁 Example project structure
 
+```text
 project/
 ├── template.yaml
 ├── lambda1/
 │   └── app.py
 └── lambda2/
     └── app.py
-
+```
 
 🧾 Step 1: Upload both ZIP packages to S3
 
