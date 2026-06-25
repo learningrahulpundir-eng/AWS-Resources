@@ -74,6 +74,54 @@ Resources:
    aws cloudformation describe-stacks --stack-name MyLambdaStack
 
 
+### Demo 3 Create a Separate Lambda Function, Reference It in the Template File, and Deploy Using CloudFormation
+
+1. Create a .py file add simple lambda code
+2. Create template file and give the reference
+ 
+ ```yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Lambda with inline code
+
+Resources:
+
+  MyLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: demo-lambda-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        
+  MyLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: my-sample-lambda
+      Runtime: python3.12
+      Handler: app.lambda_handler   # file.function_name
+      CodeUri: .                    # same folder
+      Role: !GetAtt MyLambdaExecutionRole.Arn
+      MemorySize: 128
+      Timeout: 10
+ ```
+
+3. Create bucket in S3
+4. Run the cmd (: it converts local files into deployable S3-based artifacts and prepares a CloudFormation template that CloudFormation can consume.)
+   aws cloudformation package --template-file template.yaml --s3-bucket <your-s3-bucket> --output-template-file packaged.yaml
+5. aws cloudformation deploy --template-file packaged.yaml --stack-name my-stack --capabilities CAPABILITY_NAMED_IAM
+
+
+
 ## Step-by-Step Guide: Create a Lambda Function using CloudFormation
 
 Below is a simple guide to create an AWS Lambda function using a CloudFormation template.
